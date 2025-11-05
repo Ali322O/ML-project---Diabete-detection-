@@ -1,5 +1,12 @@
 Ce fichier va définir les dépendances nécessaires et leurs versions spécifiques pour le projet 
 
+pandas
+numpy
+scikit-learn
+matplotlib
+pytest
+
+
 
 
 
