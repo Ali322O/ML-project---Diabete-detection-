@@ -1,0 +1,5 @@
+Ce fichier va définir les dépendances nécessaires et leurs versions spécifiques pour le projet 
+
+
+
+
