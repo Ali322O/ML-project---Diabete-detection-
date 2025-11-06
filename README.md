@@ -18,4 +18,15 @@ Jeux de données : **Spambase** et **Diabetes Health Indicators**
 Comparer plusieurs classifieurs sur deux datasets aux propriétés différentes **Spambase** et **Diabetes Health Indicators** 
 
 
-Le readme est a completer au fur et a mesure 
+### Installation de l’environnement virtuel
+
+Avant de lancer le pipeline, créez votre propre environnement virtuel :
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # (ou .venv\Scripts\activate sous Windows)
+pip install -r requirements.txt
+
+
+
+Le readme est a completer au fur et a mesure du projet 
