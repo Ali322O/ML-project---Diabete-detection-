@@ -12,7 +12,7 @@ Jeux de données : **Spambase** et **Diabetes Health Indicators**
 ## Auteurs
 - Mohammed Ali Al Marjani (mohammed-ali.al-marjani@imt.atlantique.net)
 - Denieul Adam ( adam.denieul@imt.atlantique.net)
-- Kossentini yosr ( yosr.kossentini@imt.atlantique.net)
+- Kessentini yosr ( yosr.kessentini@imt.atlantique.net)
 
 ## Objectif
 Comparer plusieurs classifieurs sur deux datasets aux propriétés différentes **Spambase** et **Diabetes Health Indicators** 
