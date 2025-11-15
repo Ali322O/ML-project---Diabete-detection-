@@ -31,9 +31,14 @@ from sklearn.metrics import (
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.decomposition import PCA
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+from xgboost import XGBClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import VotingClassifier
+
 
 # Liste standard des colonnes cibles possibles dans nos datasets
 TARGET_CANDIDATES = ["spam", "Diabetes_binary", "Outcome", "class"]
@@ -99,52 +104,63 @@ def load_data(filepath: str) -> pd.DataFrame:
 
 # Preprocessing des données
 
-def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
+def preprocess_data(df: pd.DataFrame, target_column: str = None,
+                    apply_pca: bool = False, pca_variance: float = 0.95):
     """
-    Prétraite les données :
-    - Gère les valeurs manquantes (moyenne sur les colonnes numériques)
-    - Normalise toutes les colonnes numériques (hors variable cible)
-    - Ne fait pas d'encodage catégoriel (nos datasets sont déjà numériques)
+    Prétraitement complet :
+    - gestion des valeurs manquantes
+    - normalisation standard
+    - Principal component anaylisis PCA optionnel
+    - retour du DataFrame transformé + infos PCA (si utilisé)
 
     Args:
-        df (pd.DataFrame): dataframe brut
+        df (pd.DataFrame): dataset original
+        target_column (str): nom de la variable cible
+        apply_pca (bool): activer PCA ou non
+        pca_variance (float): pourcentage de variance à conserver
 
     Returns:
-        pd.DataFrame: dataframe normalisé, avec la colonne cible intacte
+        df_processed : DataFrame prétraité (features + target)
+        pca_model : modèle PCA (ou None si non utilisé)
     """
 
     df_clean = df.copy()
 
-    # Gestion des valeurs manquantes
-    missing_count = df_clean.isnull().sum().sum()
-    if missing_count > 0:
-        print(f"{missing_count} valeurs manquantes détectées → imputation par la moyenne.")
-        df_clean = df_clean.fillna(df_clean.mean(numeric_only=True))
+    # Séparer target si fournie
+    y = None
+    if target_column is not None:
+        y = df_clean[target_column]
+        X = df_clean.drop(columns=[target_column])
     else:
-        print("Aucune valeur manquante détectée.")
+        X = df_clean
 
-    # Détection de la colonne cible
-    target_col = None
-    for possible_target in TARGET_CANDIDATES:
-        if possible_target in df_clean.columns:
-            target_col = possible_target
-            break
+    # Vérifier valeurs manquantes
+    if X.isnull().sum().sum() > 0:
+        X = X.fillna(X.mean())
 
-    if target_col is None:
-        raise ValueError("Impossible d’identifier la colonne cible dans le dataset.")
-
-    print(f"Colonne cible détectée : '{target_col}'")
-
-    # Normalisation des variables numériques (sauf la cible)
-    features = df_clean.drop(columns=[target_col])
+    # Normalisation
     scaler = StandardScaler()
-    features_scaled = scaler.fit_transform(features)
+    X_scaled = scaler.fit_transform(X)
 
-    df_scaled = pd.DataFrame(features_scaled, columns=features.columns)
-    df_scaled[target_col] = df_clean[target_col].values
+    # PCA (optionnel)
+    pca_model = None
+    if apply_pca:
+        pca_model = PCA(n_components=pca_variance)
+        X_scaled = pca_model.fit_transform(X_scaled)
 
-    print(f"Normalisation terminée : {df_scaled.shape[1]} variables (features + cible).")
-    return df_scaled
+        # Conversion en DataFrame
+        X_scaled = pd.DataFrame(
+            X_scaled,
+            columns=[f"PC{i+1}" for i in range(X_scaled.shape[1])]
+        )
+    else:
+        X_scaled = pd.DataFrame(X_scaled, columns=X.columns)
+
+    # Ajouter la target si elle existe
+    if y is not None:
+        X_scaled[target_column] = y.values
+
+    return X_scaled, pca_model
 
 
 
@@ -222,6 +238,7 @@ def train_models(
         results (dict): {nom_modèle: {"accuracy": float, "f1_score": float}}
     """
 
+    
     models = {
         "RandomForest": RandomForestClassifier(
             random_state=42,
@@ -236,8 +253,9 @@ def train_models(
             hidden_layer_sizes=(50,),
             max_iter=500,
             random_state=42,
-        ),
+        )
     }
+
 
     trained_models: Dict[str, object] = {}
     results: Dict[str, Dict[str, float]] = {}
@@ -342,45 +360,6 @@ def select_features(
     print(top_features.to_string(index=False))
 
     return top_features
-
-
-
-# Pipeline complet 
-
-def run_full_pipeline(filepath: str, target_column: str | None = None) -> None:
-    """
-    Exécute l'ensemble du pipeline ML sur un dataset :
-    - Chargement des données
-    - Prétraitement
-    - Split train/test
-    - Entraînement de plusieurs modèles
-    - Évaluation
-    - Sélection des features importantes (RandomForest)
-
-    Args:
-        filepath (str): chemin vers le dataset
-        target_column (str, optional): nom de la cible (sinon détection automatique)
-
-    Returns:
-        None (fonction surtout utilisée pour un run rapide + affichage console)
-    """
-
-
-    df = load_data(filepath)
-    df_clean = preprocess_data(df)
-    X_train, X_test, y_train, y_test = split_data(df_clean, target_column=target_column)
-    models, results = train_models(X_train, X_test, y_train, y_test)
-    evaluations = evaluate_models(models, X_test, y_test)
-
-    if "RandomForest" in models:
-        print("\nAnalyse des variables importantes avec RandomForest :")
-        select_features(models["RandomForest"], X_train, top_n=10)
-    else:
-        print("Le modèle 'RandomForest' n'a pas été entraîné : pas d'analyse de features.")
-
-    print("\n Pipeline complet exécuté.\n")
-
-
 
 # Fonctions de visualisation pour les notebooks
 
