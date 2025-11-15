@@ -28,6 +28,7 @@ from sklearn.metrics import (
     auc,
     precision_recall_curve,
 )
+from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
@@ -35,16 +36,13 @@ from sklearn.decomposition import PCA
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-from xgboost import XGBClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import VotingClassifier
 
+from sklearn.model_selection import cross_validate, StratifiedKFold
 
 # Liste standard des colonnes cibles possibles dans nos datasets
 TARGET_CANDIDATES = ["spam", "Diabetes_binary", "Outcome", "class"]
-
-
-
 
 
 
@@ -170,8 +168,7 @@ def split_data(
     df: pd.DataFrame,
     target_column: str | None = None,
     test_size: float = 0.2,
-    random_state: int = 42,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    random_state: int = 42) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """
     Sépare le dataset en ensembles d'entraînement et de test.
 
@@ -220,8 +217,7 @@ def train_models(
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
     y_train: pd.Series,
-    y_test: pd.Series,
-) -> Tuple[Dict[str, object], Dict[str, Dict[str, float]]]:
+    y_test: pd.Series) -> Tuple[Dict[str, object], Dict[str, Dict[str, float]]]:
     """
     Entraîne plusieurs modèles de classification et compare leurs performances.
 
@@ -285,8 +281,7 @@ def train_models(
 def evaluate_models(
     models: Dict[str, object],
     X_test: pd.DataFrame,
-    y_test: pd.Series,
-) -> Dict[str, Dict[str, object]]:
+    y_test: pd.Series) -> Dict[str, Dict[str, object]]:
     """
     Évalue plusieurs modèles sur un jeu de test :
     - Matrice de confusion
@@ -324,14 +319,108 @@ def evaluate_models(
     return evaluations
 
 
+from sklearn.model_selection import cross_validate
+
+def cross_validate_model(
+    model,
+    X,
+    y,
+    cv: int = 5,
+    scoring: list | tuple = ("accuracy", "precision", "recall", "f1")
+):
+    """
+    Effectue une validation croisée sur un modèle et affiche plusieurs métriques.
+    
+    Args:
+        model: modèle sklearn (RandomForest, KNN, etc.)
+        X (DataFrame)
+        y (Series)
+        cv (int): nombre de folds
+        scoring (list/tuple): métriques à calculer
+
+    Returns:
+        results (dict): dictionnaire contenant les scores moyens et écarts-types
+    """
+
+    print(f"\n Validation croisée pour : {model.__class__.__name__}")
+
+    scores = cross_validate(
+        model,
+        X,
+        y,
+        cv=cv,
+        scoring=scoring,
+        return_train_score=False,
+        n_jobs=-1
+    )
+
+    results = {}
+    for metric in scoring:
+        mean = scores[f"test_{metric}"].mean()
+        std = scores[f"test_{metric}"].std()
+        results[metric] = (mean, std)
+        print(f"→ {metric.capitalize()} : {mean:.4f} ± {std:.4f}")
+
+    return results
+
+
+
+
+
+from sklearn.model_selection import GridSearchCV
+
+def grid_search_model(
+    model,
+    param_grid: dict,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    scoring: str = "f1",
+    cv: int = 5,
+    n_jobs: int = -1) -> Tuple[object, dict, float]:
+    """
+    Effectue un GridSearchCV pour trouver les meilleurs hyperparamètres.
+
+    Args:
+        model: modèle sklearn (KNN, RandomForest, etc.)
+        param_grid (dict): grille des hyperparamètres à tester
+        X_train (DataFrame)
+        y_train (Series)
+        scoring (str): métrique ('f1', 'accuracy', 'recall', etc.)
+        cv (int): nombre de folds
+        n_jobs (int): nombre de threads (-1 = tous)
+
+    Returns:
+        best_model : modèle entraîné avec les meilleurs paramètres
+        best_params : dict des meilleurs paramètres
+        best_score : meilleur score cross-validation
+    """
+
+    grid = GridSearchCV(
+        estimator=model,
+        param_grid=param_grid,
+        scoring=scoring,
+        cv=cv,
+        n_jobs=n_jobs,
+        verbose=1
+    )
+
+    grid.fit(X_train, y_train)
+
+    print("\n Résultats du GridSearchCV :")
+    print("Meilleurs paramètres :", grid.best_params_)
+    print(f"Meilleur score ({scoring}) :", grid.best_score_)
+
+    best_model = grid.best_estimator_
+
+    return best_model, grid.best_params_, grid.best_score_
+
 
 # Selection des variables (feature importance)
 
 def select_features(
     model: object,
     X_train: pd.DataFrame,
-    top_n: int = 10,
-) -> pd.DataFrame:
+    top_n: int = 10) -> pd.DataFrame:
     """
     Sélectionne les variables les plus importantes selon un modèle de type RandomForest.
 
@@ -381,8 +470,7 @@ def plot_correlation_heatmap(
     df: pd.DataFrame,
     target_column: str | None = None,
     max_features: int = 30,
-    title: str = "Matrice de corrélation",
-) -> None:
+    title: str = "Matrice de corrélation") -> None:
     """
     Affiche une heatmap de corrélation des variables numériques.
 
@@ -413,8 +501,7 @@ def plot_correlation_heatmap(
 def plot_pca_2d(
     X: pd.DataFrame,
     y: pd.Series,
-    title: str = "Projection PCA (2D)",
-) -> None:
+    title: str = "Projection PCA (2D)") -> None:
     """
     Applique une PCA 2D et affiche un scatter plot coloré par la classe.
 
@@ -439,8 +526,7 @@ def plot_confusion_matrices(
     models: Dict[str, object],
     X_test: pd.DataFrame,
     y_test: pd.Series,
-    class_names: List[str] | None = None,
-) -> None:
+    class_names: List[str] | None = None) -> None:
     """
     Affiche une matrice de confusion pour chaque modèle.
     """
@@ -475,8 +561,7 @@ def plot_roc_curves(
     models: Dict[str, object],
     X_test: pd.DataFrame,
     y_test: pd.Series,
-    title: str = "Courbes ROC",
-) -> None:
+    title: str = "Courbes ROC") -> None:
     """
     Affiche les courbes ROC pour plusieurs modèles de classification binaire.
     """
@@ -508,8 +593,7 @@ def plot_precision_recall_curves(
     models: Dict[str, object],
     X_test: pd.DataFrame,
     y_test: pd.Series,
-    title: str = "Courbes Precision-Recall",
-) -> None:
+    title: str = "Courbes Precision-Recall") -> None:
     """
     Affiche les courbes Precision-Recall pour plusieurs modèles.
     """
@@ -537,8 +621,7 @@ def plot_precision_recall_curves(
 
 def plot_feature_importances_bar(
     top_features: pd.DataFrame,
-    title: str = "Top features importantes (RandomForest)",
-) -> None:
+    title: str = "Top features importantes (RandomForest)") -> None:
     """
     Affiche un barplot des features importantes (sortie de select_features).
     """
