@@ -5,7 +5,8 @@ numpy
 scikit-learn
 matplotlib
 pytest
-
+xgboost>=2.0
+seaborn
 
 
 
