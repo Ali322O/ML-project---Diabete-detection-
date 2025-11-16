@@ -51,4 +51,38 @@ pip install -r requirements.txt
 
 
 
-Le readme est a completer au fur et a mesure du projet 
+
+
+## Organisation de notre pipeline
+
+Le fichier `ml_workflow.py` a été structuré de manière à pouvoir être réutilisé dans d’autres projets
+Chaque étape ( loading, preprocessing, entraînement, validation croisée, visualisation) est indépendante, ce qui permet d'utiliser le pipeline sur un nouveau dataset simplement en changeant le chemin du fichier et d’exécuter les mêmes étapes dans les notebooks sans dupliquer du code.
+
+
+## Validation croisée et choix des modèles
+
+Pour chaque dataset, les modèles ont été comparés via validation croisée 5-fold, en calculant les métriques principales : **Accuracy**, **Precision**, **Recall** et **F1-score**.  
+Ce choix permet d’évaluer chaque modèle de manière stable, surtout dans le cas du dataset diabète où les classes sont déséquilibrées.
+
+Les meilleurs modèles obtenus sont :
+
+- **Spambase :** RandomForest (meilleurs scores globaux), suivi de KNN  
+- **Diabetes :** XGBoost (meilleure stabilité et meilleur Recall)
+
+## Notes sur la PCA
+
+La PCA a été intégrée au pipeline pour permettre l’analyse de datasets à grande dimension.  
+Cependant, la réduction de dimension n’apporte pas d’amélioration notable dans les deux datasets : les premières composantes capturent la majorité de la variance, mais les modèles fonctionnent déjà très bien sans réduction....
+
+
+## Lancement rapide
+
+Une fois l’environnement installé, il est possible d’exécuter un pipeline complet en quelques lignes dans un notebook :
+
+```python
+from src.ml_workflow import load_data, preprocess_data, split_data, train_models
+
+df = load_data("data/spambase.data")
+df_prep, _ = preprocess_data(df, target_column="spam")
+X_train, X_test, y_train, y_test = split_data(df_prep, target_column="spam")
+models, results = train_models(X_train, X_test, y_train, y_test)
