@@ -40,20 +40,8 @@ Fonctions principales:
 Les notebooks font l'analyse du spam dataset créé par HP labs et du diabète dataset, l'entrainement et l'évaluation des modèles de classification, la comparaison des modèles utilisés et finalement le choix du modèle le plus pertinent vis-à vis des métriques notamment l'accuracy, le F1 score, le recall et la précision.
 Nous n’avons pas inclus XGBoost pour le spam dataset, car les autres modèles (Random Forest, KNN) ont atteint des résultats satisfaisants, rendant l’ajout de XGBoost non nécessaire dans ce contexte. En revanche, XGBoost a été utilisé pour la classification du dataset diabète, où il a montré de bons résultats.
 
-### Installation de l’environnement virtuel
 
-Avant de lancer le pipeline, créez votre propre environnement virtuel :
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate  # (ou .venv\Scripts\activate sous Windows)
-pip install -r requirements.txt
-
-
-
-
-
-## Organisation de notre pipeline
+### Organisation de notre pipeline
 
 Le fichier `ml_workflow.py` a été structuré de manière à pouvoir être réutilisé dans d’autres projets
 Chaque étape ( loading, preprocessing, entraînement, validation croisée, visualisation) est indépendante, ce qui permet d'utiliser le pipeline sur un nouveau dataset simplement en changeant le chemin du fichier et d’exécuter les mêmes étapes dans les notebooks sans dupliquer du code.
@@ -86,3 +74,12 @@ df = load_data("data/spambase.data")
 df_prep, _ = preprocess_data(df, target_column="spam")
 X_train, X_test, y_train, y_test = split_data(df_prep, target_column="spam")
 models, results = train_models(X_train, X_test, y_train, y_test)
+
+### Installation de l’environnement virtuel
+
+Avant de lancer le pipeline, créez votre propre environnement virtuel :
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # (ou .venv\Scripts\activate sous Windows)
+pip install -r requirements.txt
