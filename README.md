@@ -70,16 +70,15 @@ Une fois l’environnement installé, il est possible d’exécuter un pipeline 
 ```python
 from src.ml_workflow import load_data, preprocess_data, split_data, train_models
 
-df = load_data("data/spambase.data")
+df = load_data("data/spambase.data")  # (ou load_data("data/diabetes/diabetes.csv" pour le dataset diabète ) 
 df_prep, _ = preprocess_data(df, target_column="spam")
 X_train, X_test, y_train, y_test = split_data(df_prep, target_column="spam")
 models, results = train_models(X_train, X_test, y_train, y_test)
 
 ### Installation de l’environnement virtuel
 
-Avant de lancer le pipeline, créez votre propre environnement virtuel :
+Avant de lancer le pipeline, il faut créez son propre environnement virtuel :
 
-```bash
 python3 -m venv .venv
 source .venv/bin/activate  # (ou .venv\Scripts\activate sous Windows)
 pip install -r requirements.txt
