@@ -212,7 +212,7 @@ def train_models(X_train: pd.DataFrame,X_test: pd.DataFrame,y_train: pd.Series,y
     models = {
         "RandomForest": RandomForestClassifier(
             random_state=42,
-            n_estimators=300,
+            n_estimators=800,
             n_jobs=-1,
             class_weight="balanced",
         ),
@@ -418,7 +418,7 @@ def plot_correlation_heatmap(df: pd.DataFrame,target_column: str | None = None,m
 
 
 #### Visualisation de la PCA 2D
-def plot_pca_2d(X: pd.DataFrame,y: pd.Series,itle: str = "Projection PCA (2D)") :
+def plot_pca_2d(X: pd.DataFrame,y: pd.Series ) :
     
     """
     Représentation simple en deux dimensions après PCA pour visualiser la séparation des classes.
@@ -431,8 +431,7 @@ def plot_pca_2d(X: pd.DataFrame,y: pd.Series,itle: str = "Projection PCA (2D)") 
     scatter = plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, cmap="viridis", alpha=0.5)
     plt.xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.2%} var.)")
     plt.ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.2%} var.)")
-    plt.title(title)
-    plt.legend(*scatter.legend_elements(), title="Classe")
+    plt.title("Projection PCA (2D)")
     plt.tight_layout()
     plt.show()
 
