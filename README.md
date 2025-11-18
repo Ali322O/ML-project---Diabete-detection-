@@ -33,24 +33,24 @@ Le pipeline est entièrement modulaire et comprend :
     - Normalisation des variables
 
 2. Exploration des données
-   -Distribution des classes
-   -Heatmap des corrélations
-   -Analyse en Composantes Principales (PCA)
+    -Distribution des classes
+    -Heatmap des corrélations
+    -Analyse en Composantes Principales (PCA)
 
 3. Entraînement des modèles
-   -Split train/test
-   -Modèles inclus : RandomForest, KNN, MLP, XGBoost
-   -Première évaluation du modèle
-   -Optimisation via GridSearchCV / RandomizedSearchCV
-   -Validation croisée 3 ou 5 folds
+    -Split train/test
+    -Modèles inclus : RandomForest, KNN, MLP, XGBoost
+    -Première évaluation du modèle
+    -Optimisation via GridSearchCV / RandomizedSearchCV
+    -Validation croisée 3 ou 5 folds
 
 4. Évaluation & Visualisations
-   -Matrices de confusion
-   -Courbes ROC & Precision–Recall
-   -Importance des features (RandomForest)
-   -Priorisation des métriques selon le dataset :
-   -Spambase : F1-score & Recall
-   -Diabetes : Recall (réduction des faux négatifs)
+    -Matrices de confusion
+    -Courbes ROC & Precision–Recall
+    -Importance des features (RandomForest)
+    -Priorisation des métriques selon le dataset :
+    -Spambase : F1-score & Recall
+    -Diabetes : Recall (réduction des faux négatifs)
 
 - Pour les notebooks:
 Les notebooks font l'analyse du spam dataset créé par HP labs et du diabète dataset, l'entrainement et l'évaluation des modèles de classification, la comparaison des modèles utilisés et finalement le choix du modèle le plus pertinent vis-à vis des métriques notamment l'accuracy, le F1 score, le recall et la précision.
