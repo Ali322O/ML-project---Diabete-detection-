@@ -100,7 +100,7 @@ def load_data(filepath: str):
 
 #### Prétraitement des données
 
-def preprocess_data(df: pd.DataFrame, target_column: str = None, apply_pca: bool = False, pca_variance: float = 0.95):
+def preprocess_data(df: pd.DataFrame, target_column: str = None , apply_pca: bool = False, pca_variance: float = 0.95):
     
     """
     Le prétraitement a plusieurs objectifs :
@@ -126,37 +126,21 @@ def preprocess_data(df: pd.DataFrame, target_column: str = None, apply_pca: bool
     # Vérification des valeurs manquantes, remplacées par la moyenne ( il n'y en a pas dans nos datasets mais il vaut mieux prévoir)
     if X.isnull().sum().sum() > 0:
         X = X.fillna(X.mean())
-
-    # Normalisation 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    # PCA optionnelle
-    pca_model = None
-    if apply_pca:
-
-        pca_model = PCA(n_components=pca_variance)
-        X_scaled = pca_model.fit_transform(X_scaled)
-
-        X_scaled = pd.DataFrame(
-            X_scaled,
-            columns=[f"PC{i+1}" for i in range(X_scaled.shape[1])]
-        )
-    else:
-        # Si pas de PCA, on garde les noms des colonnes originales
-        X_scaled = pd.DataFrame(X_scaled, columns=X.columns)
-
     
+    X_processed = X.copy()
+
+    # Rejoint la cible si elle existe
     if y is not None:
-        X_scaled[target_column] = y.values
+        X_processed[target_column] = y.values
 
-    return X_scaled, pca_model
-
+    # On renvoie un None pour la PCA, car elle sera gérée après notre split
+    return X_processed, None
+    
 
 
 ####  Split train / test
 
-def split_data(df: pd.DataFrame,target_column: str | None = None,test_size: float = 0.2,random_state: int = 42) :
+def split_data(df: pd.DataFrame,target_column: str | None = None,test_size: float = 0.2,random_state: int = 42 , apply_pca: bool = False, pca_variance: float = 0.95) :
     
     """
     - Split classique : on sépare les features et la cible, puis on applique un train_test_split
@@ -189,10 +173,28 @@ def split_data(df: pd.DataFrame,target_column: str | None = None,test_size: floa
         random_state=random_state,
         stratify=y,
     )
-
+    
     print(f"Split effectué : {X_train.shape[0]} train / {X_test.shape[0]} test")
-    return X_train, X_test, y_train, y_test
 
+    # Normalisation des données
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train.columns)
+    X_test_scaled = pd.DataFrame(X_test_scaled, columns=X_test.columns)
+
+    # ---- PCA APRES le scaling ----
+    pca_model = None
+    if apply_pca:
+        pca_model = PCA(n_components=pca_variance)
+        X_train_scaled = pca_model.fit_transform(X_train_scaled)
+        X_test_scaled = pca_model.transform(X_test_scaled)
+
+        # Convertir en DataFrame
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns=[f"PC{i+1}" for i in range(X_train_scaled.shape[1])])
+        X_test_scaled = pd.DataFrame(X_test_scaled, columns=[f"PC{i+1}" for i in range(X_test_scaled.shape[1])])
+
+    return X_train_scaled, X_test_scaled, y_train, y_test
 
 
 #### Entraînement des modèles 
@@ -263,23 +265,27 @@ def evaluate_models(models: Dict[str, object],X_test: pd.DataFrame,y_test: pd.Se
     evaluations: Dict[str, Dict[str, object]] = {}
 
     for name, model in models.items():
-        print(f"\n🔍 Évaluation du modèle : {name}")
+        print(f"\n {name} ")
         y_pred = model.predict(X_test)
-
-        report = classification_report(y_test, y_pred, output_dict=True)
         cm = confusion_matrix(y_test, y_pred)
 
-        print("Matrice de confusion :")
-        print(cm)
-        print("\nRapport de classification :")
-        print(classification_report(y_test, y_pred))
+        # Affichage propre de la matrice de confusion uniquement
+        plt.figure(figsize=(4, 3))
+        sns.heatmap(
+            cm,
+            annot=True,
+            fmt="d",
+            cmap="Blues",
+            cbar=False,
+            xticklabels=["Classe 0", "Classe 1"],
+            yticklabels=["Classe 0", "Classe 1"]
+        )
+        plt.xlabel("Prédit")
+        plt.ylabel("Réel")
+        plt.title(f"Matrice de confusion - {name}")
+        plt.tight_layout()
+        plt.show()
 
-        evaluations[name] = {
-            "classification_report": report,
-            "confusion_matrix": cm,
-        }
-
-    return evaluations
 
 
 
