@@ -33,24 +33,24 @@ Le pipeline est entièrement modulaire et comprend :
     - Normalisation des variables
 
 2. Exploration des données
-    -Distribution des classes
-    -Heatmap des corrélations
-    -Analyse en Composantes Principales (PCA)
+    - Distribution des classes
+    - Heatmap des corrélations
+    - Analyse en Composantes Principales (PCA)
 
 3. Entraînement des modèles
-    -Split train/test
-    -Modèles inclus : RandomForest, KNN, MLP, XGBoost
-    -Première évaluation du modèle
-    -Optimisation via GridSearchCV / RandomizedSearchCV
-    -Validation croisée 3 ou 5 folds
+    - Split train/test
+    - Modèles inclus : RandomForest, KNN, MLP, XGBoost
+    - Première évaluation du modèle
+    - Optimisation via GridSearchCV / RandomizedSearchCV
+    - Validation croisée 3 ou 5 folds
 
 4. Évaluation & Visualisations
-    -Matrices de confusion
-    -Courbes ROC & Precision–Recall
-    -Importance des features (RandomForest)
-    -Priorisation des métriques selon le dataset :
-    -Spambase : F1-score & Recall
-    -Diabetes : Recall (réduction des faux négatifs)
+    - Matrices de confusion
+    - Courbes ROC & Precision–Recall
+    - Importance des features (RandomForest)
+    - Priorisation des métriques selon le dataset :
+    - Spambase : F1-score & Recall
+    - Diabetes : Recall (réduction des faux négatifs)
 
 - Pour les notebooks:
 Les notebooks font l'analyse du spam dataset créé par HP labs et du diabète dataset, l'entrainement et l'évaluation des modèles de classification, la comparaison des modèles utilisés et finalement le choix du modèle le plus pertinent vis-à vis des métriques notamment l'accuracy, le F1 score, le recall et la précision.
@@ -77,11 +77,18 @@ La PCA a été intégrée au pipeline pour permettre l’analyse de datasets à 
 Cependant, la réduction de dimension n’apporte pas d’amélioration notable dans les deux datasets : les premières composantes capturent la majorité de la variance, mais les modèles fonctionnent déjà très bien sans réduction....
 
 
+## Installation de l’environnement virtuel
+
+Avant de lancer le pipeline, il faut créez son propre environnement virtuel :
+```python
+python3 -m venv .venv
+source .venv/bin/activate  # (ou .venv\Scripts\activate sous Windows)
+pip install -r requirements.txt
+
 ## Lancement rapide
 
 Une fois l’environnement installé, il est possible d’exécuter un pipeline complet en quelques lignes dans un notebook :
 
-```python
 from src.ml_workflow import load_data, preprocess_data, split_data, train_models
 
 df = load_data("data/spambase.data")  # (ou load_data("data/diabetes/diabetes.csv") pour le dataset diabète ) 
@@ -89,10 +96,4 @@ df_prep, _ = preprocess_data(df, target_column="spam")
 X_train, X_test, y_train, y_test = split_data(df_prep, target_column="spam")
 models, results = train_models(X_train, X_test, y_train, y_test)
 
-### Installation de l’environnement virtuel
 
-Avant de lancer le pipeline, il faut créez son propre environnement virtuel :
-
-python3 -m venv .venv
-source .venv/bin/activate  # (ou .venv\Scripts\activate sous Windows)
-pip install -r requirements.txt
