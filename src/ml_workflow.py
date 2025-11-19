@@ -11,6 +11,8 @@ L’idée est d’avoir un seul fichier .py qui centralise :
 """
 
 from __future__ import annotations
+import warnings
+import sys
 import os
 from pathlib import Path
 from typing import Dict, Tuple, List, Union
@@ -46,7 +48,9 @@ from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
-import sys 
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.pipeline import Pipeline
+
 
 # Liste des noms possibles pour la colonne cible selon nos datasets
 TARGET_CANDIDATES = ["spam", "Diabetes_binary", "Outcome", "class"]
