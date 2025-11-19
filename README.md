@@ -22,19 +22,35 @@ Comparer plusieurs classifieurs sur deux datasets aux propriétés différentes 
 C'est un fichier qui fournit un pipeline de classification permettant de préparer les données, entraîner plusieurs modèles (RandomForest, KNN, NeuralNetwork, XGboost) et visualiser les résultats.
 Fonctions principales: 
 
-1- Chargement des données: Support .csv et .data (Spambase), détection automatique de la colonne cible
+Contenu du fichier ml_workflow.py
 
-2- Prétraitement: Gestion simple des valeurs manquantes, normalisation des features numériques
+Le pipeline est entièrement modulaire et comprend :
 
-3- Split Train/Test: CrossValidation
+1. Chargement & Prétraitement
+    - Support .csv et .data
+    - Détection de la colonne cible
+    - Gestion des valeurs manquantes
+    - Normalisation des variables
 
-4- Entraînement des modèles: optimisation des hyper-paramètres, renvoie des scores Accuracy et F1
+2. Exploration des données
+    - Distribution des classes
+    - Heatmap des corrélations
+    - Analyse en Composantes Principales (PCA)
 
-5- Évaluation: Matrices de confusion, Rapport de classification
+3. Entraînement des modèles
+    - Split train/test
+    - Modèles inclus : RandomForest, KNN, MLP, XGBoost
+    - Première évaluation du modèle
+    - Optimisation via GridSearchCV / RandomizedSearchCV
+    - Validation croisée 3 ou 5 folds
 
-6- Sélection des features importantes pour RandomForest
-
-7- Visualisations: Distribution des classes, Heatmap des corrélations, Courbes ROC et Precision-Recall
+4. Évaluation & Visualisations
+    - Matrices de confusion
+    - Courbes ROC & Precision–Recall
+    - Importance des features (RandomForest)
+    - Priorisation des métriques selon le dataset :
+    - Spambase : F1-score & Recall
+    - Diabetes : Recall (réduction des faux négatifs)
 
 - Pour les notebooks:
 Les notebooks font l'analyse du spam dataset créé par HP labs et du diabète dataset, l'entrainement et l'évaluation des modèles de classification, la comparaison des modèles utilisés et finalement le choix du modèle le plus pertinent vis-à vis des métriques notamment l'accuracy, le F1 score, le recall et la précision.
@@ -49,8 +65,6 @@ Chaque étape ( loading, preprocessing, entraînement, validation croisée, visu
 
 ## Validation croisée et choix des modèles
 
-Pour chaque dataset, les modèles ont été comparés via validation croisée 5-fold, en calculant les métriques principales : **Accuracy**, **Precision**, **Recall** et **F1-score**.  
-Ce choix permet d’évaluer chaque modèle de manière stable, surtout dans le cas du dataset diabète où les classes sont déséquilibrées.
 
 Les meilleurs modèles obtenus sont :
 
@@ -63,11 +77,18 @@ La PCA a été intégrée au pipeline pour permettre l’analyse de datasets à 
 Cependant, la réduction de dimension n’apporte pas d’amélioration notable dans les deux datasets : les premières composantes capturent la majorité de la variance, mais les modèles fonctionnent déjà très bien sans réduction....
 
 
+## Installation de l’environnement virtuel
+
+Avant de lancer le pipeline, il faut créez son propre environnement virtuel :
+```python
+python3 -m venv .venv
+source .venv/bin/activate  # (ou .venv\Scripts\activate sous Windows)
+pip install -r requirements.txt
+
 ## Lancement rapide
 
 Une fois l’environnement installé, il est possible d’exécuter un pipeline complet en quelques lignes dans un notebook :
 
-```python
 from src.ml_workflow import load_data, preprocess_data, split_data, train_models
 
 df = load_data("data/spambase.data")  # (ou load_data("data/diabetes/diabetes.csv") pour le dataset diabète ) 
@@ -75,10 +96,4 @@ df_prep, _ = preprocess_data(df, target_column="spam")
 X_train, X_test, y_train, y_test = split_data(df_prep, target_column="spam")
 models, results = train_models(X_train, X_test, y_train, y_test)
 
-### Installation de l’environnement virtuel
 
-Avant de lancer le pipeline, il faut créez son propre environnement virtuel :
-
-python3 -m venv .venv
-source .venv/bin/activate  # (ou .venv\Scripts\activate sous Windows)
-pip install -r requirements.txt
