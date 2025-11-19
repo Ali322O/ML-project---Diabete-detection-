@@ -74,7 +74,7 @@ Les meilleurs modèles obtenus sont :
 ## Notes sur la PCA
 
 La PCA a été intégrée au pipeline pour permettre l’analyse de datasets à grande dimension.  
-Cependant, la réduction de dimension n’apporte pas d’amélioration notable dans les deux datasets : les premières composantes capturent la majorité de la variance, mais les modèles fonctionnent déjà très bien sans réduction....
+Cependant, la réduction de dimension n’apporte pas d’amélioration notable dans le dataset du diabetes : les premières composantes capturent la majorité de la variance, mais les modèles fonctionnent déjà très bien sans réduction....
 
 
 ## Installation de l’environnement virtuel
