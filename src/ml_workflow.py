@@ -46,11 +46,10 @@ from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
+import sys 
 
 # Liste des noms possibles pour la colonne cible selon nos datasets
 TARGET_CANDIDATES = ["spam", "Diabetes_binary", "Outcome", "class"]
-
-
 
 
 # ETAPE 1 : On charge les données (Spambase + Diabetes)
@@ -503,7 +502,100 @@ def plot_feature_importances_bar(top_features: pd.DataFrame,title: str = "Top fe
     plt.show()
 
 
-# ETAPE 10 : Fonctions spécifiques au dataset diabète :
+# ETAPE 10 : Fonctions spécifiques au pipeline diabète :
+## Dans le dataset Spam , on n'utilise pas le training de XBoost ni de VotingClassifier
+
+def train_and_evaluate_models(X_train, y_train, X_test, y_test, threshold=0.35):
+    """
+    Entraîne plusieurs modèles (log reg, RF, XGBoost, Voting),
+    les évalue, et retourne aussi les modèles entraînés.
+
+    Retourne :
+    - results_df : DataFrame des performances triées
+    - models_trained : dictionnaire {nom: modèle entraîné}
+    """
+
+    # --- Calcul du ratio original (avant oversampling) ---
+    ratio = (y_train == 0).sum() / (y_train == 1).sum()
+
+    # --- Pipeline commun : StandardScaler → OverSampling ---
+    # ceci garantit un espace identique pour tous les modèles
+    base_steps = [
+        ("oversample", RandomOverSampler(random_state=42))
+    ]
+
+    # --- Modèles individuels avec pipelines cohérents ---
+    logreg_pipeline = Pipeline(
+        base_steps + [
+            ("logreg", LogisticRegression(max_iter=600, class_weight="balanced"))
+        ]
+    )
+
+    rf_pipeline = Pipeline(
+        base_steps + [
+            ("rf", RandomForestClassifier(
+                n_estimators=500,
+                max_depth=7,
+                min_samples_split=7,
+                min_samples_leaf=7,
+                class_weight="balanced",
+                random_state=42,
+                n_jobs=-1
+            ))
+        ]
+    )
+
+    xgb_pipeline = Pipeline(
+        base_steps + [
+            ("xgb", XGBClassifier(
+                n_estimators=600,
+                max_depth=6,
+                learning_rate=0.05,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                scale_pos_weight=ratio,
+                objective="binary:logistic",
+                eval_metric="logloss",
+                n_jobs=-1,
+                random_state=42
+            ))
+        ]
+    )
+
+    # --- Liste commune des modèles ---
+    models = {
+        "Logistic Regression": logreg_pipeline,
+        "Random Forest": rf_pipeline,
+        "XGBoost": xgb_pipeline
+    }
+
+    results = {}
+    models_trained = {}
+
+    # --- Entraînement cohérent pour tous ---
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        models_trained[name] = model
+        results[name] = evaluation_model(model, X_test, y_test, threshold=threshold)
+
+    # --- Voting: tous les modèles ont le même espace de features ---
+    voting = VotingClassifier(
+        estimators=[
+            ("logreg", models_trained["Logistic Regression"]),
+            ("rf", models_trained["Random Forest"]),
+            ("xgb", models_trained["XGBoost"])
+        ],
+        voting="soft"
+    )
+
+    # Voting doit ré-apprendre pour être Fitted
+    voting.fit(X_train, y_train)
+    models_trained["Voting (soft)"] = voting
+    results["Voting (soft)"] = evaluation_model(voting, X_test, y_test, threshold=threshold)
+
+    # --- Tableau final trié ---
+    results_df = pd.DataFrame(results).T.sort_values("Recall", ascending=False)
+    return results_df, models_trained
 
 def analyze_diabetes_distribution(filepath: str):
     """
@@ -601,24 +693,42 @@ def plot_top10_correlated(df: pd.DataFrame) :
     plt.show()
 
 
-def scale_and_pca(df: pd.DataFrame):
-    """
-    Standardisation + PCA pour le dataset diabète (visualisation uniquement).
-    On scale ici sur tout le dataset car ces données ne servent pas à l'entraînement.
-    """
+def scale_and_pca(df):
+    ## La PCA est sensible à l’échelle des variables :
+    # on veut éviter qu’une feature avec des valeurs grandes (ex : BMI) domine la variance.
 
+    # Séparation des features et de la cible
     X = df.drop(columns=["Diabetes_binary"])
     y = df["Diabetes_binary"]
 
+    # Standardisation (moyenne = 0, variance = 1)
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    print(
-        "Données standardisées :",
-        "Moyenne (approx) :", X_scaled.mean().round(2),
-        "et écart-type (approx) :", X_scaled.std().round(2),
-    )
+    print(" Données standardisées :",
+          "Moyenne (approx) :", X_scaled.mean().round(2),
+          "et écart-type (approx) :", X_scaled.std().round(2))
 
+    # on commence avec toutes les composantes
     pca = PCA()
     X_pca = pca.fit_transform(X_scaled)
-    explained_var = pca.explained_variance_ratio
+
+    # Variance expliquée par chaque composante via explained_variance_ratio_
+    explained_var = pca.explained_variance_ratio_
+
+    plt.figure(figsize=(10,5))
+    plt.bar(range(1, len(explained_var) + 1), explained_var * 100)
+    plt.xlabel("Composante principale")
+    plt.ylabel("Variance expliquée (%)")
+    plt.title("Variance expliquée suivant les composantes (PCA)")
+    plt.show()
+
+    # Affiche les 2 premières composantes
+    print(f"PC1 : {explained_var[0]*100:.2f}%  |  PC2 : {explained_var[1]*100:.2f}%")
+    print(f"Variance cumulée (PC1+PC2) : {explained_var[:2].sum()*100:.2f}%")
+
+    # Affiche les 3 premières composantes
+    print(f"PC1 : {explained_var[0]*100:.2f}%  |  PC2 : {explained_var[1]*100:.2f}%|  PC3 : {explained_var[2]*100:.2f}%")
+    print(f"Variance cumulée (PC1+PC2+PC3) : {explained_var[:3].sum()*100:.2f}%")
+
+    return X_scaled, X_pca, explained_var, y
