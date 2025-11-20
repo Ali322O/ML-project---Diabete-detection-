@@ -544,7 +544,7 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, threshold=0.35):
                 min_samples_leaf=7,
                 class_weight="balanced",
                 random_state=42,
-                n_jobs=-1
+                n_jobs=1
             ))
         ]
     )
@@ -600,6 +600,30 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, threshold=0.35):
     # --- Tableau final trié ---
     results_df = pd.DataFrame(results).T.sort_values("Recall", ascending=False)
     return results_df, models_trained
+
+def evaluation_model(model, X_test, y_test, threshold=0.35):
+    """
+    Évalue un modèle de classification binaire avec un seuil ajustable.
+    Permet de favoriser le Recall au détriment de la précision.
+    """
+    if hasattr(model, "predict_proba"):
+        y_prob = model.predict_proba(X_test)[:, 1]
+        y_pred = (y_prob >= threshold).astype(int)
+    else:
+        y_pred = model.predict(X_test)
+        y_prob = None
+
+    metrics = {
+        "Accuracy": accuracy_score(y_test, y_pred),
+        "Precision": precision_score(y_test, y_pred),
+        "Recall": recall_score(y_test, y_pred),
+        "F1-score": f1_score(y_test, y_pred)
+    }
+
+    if y_prob is not None:
+        metrics["ROC_AUC"] = roc_auc_score(y_test, y_prob)
+
+    return metrics
 
 def analyze_diabetes_distribution(filepath: str):
     """
