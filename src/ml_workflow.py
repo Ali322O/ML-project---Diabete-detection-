@@ -513,10 +513,8 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, threshold=0.35):
     """
     Entraîne plusieurs modèles (log reg, RF, XGBoost, Voting),
     les évalue, et retourne aussi les modèles entraînés.
-
-    Retourne :
-    - results_df : DataFrame des performances triées
-    - models_trained : dictionnaire {nom: modèle entraîné}
+    Le seuil de classification peut être ajusté pour favoriser le Recall.
+    
     """
 
     # --- Calcul du ratio original (avant oversampling) ---
@@ -698,7 +696,6 @@ def plot_correlation_matrix(df: pd.DataFrame):
     )
     plt.title("Correlation matrix avec heatmap", fontsize=14)
     plt.show()
-
 
 def plot_top10_correlated(df: pd.DataFrame) :
     corr_matrix = df.corr()
